@@ -1,96 +1,104 @@
 import React from 'react';
 import { BookOpen } from 'lucide-react';
 import { AppView, LastReadPosition, UiLanguage } from '../types/quran';
-import { toBengaliDigits } from '../utils/quranLogic';
+import { buildAppPath, toBengaliDigits } from '../utils/quranLogic';
 import { NoorEmblem } from './GeometricIcons';
 
 interface TopBarProps {
   activeView: AppView;
+  activeSurahNumber: number;
   onSelectView: (view: AppView) => void;
   uiLanguage: UiLanguage;
   lastRead: LastReadPosition;
-  bookmarkCount: number;
+  savedCount: number;
   onResumeReading: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
   activeView,
+  activeSurahNumber,
   onSelectView,
   uiLanguage,
   lastRead,
-  bookmarkCount,
+  savedCount,
   onResumeReading,
 }) => {
+  const baseUrl = import.meta.env.BASE_URL || '/';
+
   const navItems: { id: AppView; bn: string; en: string }[] = [
-    { id: 'reader', bn: 'কুরআন পাঠ', en: 'Reader' },
     { id: 'surahs', bn: 'সকল সূরা', en: 'Surahs' },
     {
       id: 'bookmarks',
-      bn: bookmarkCount > 0 ? `সংরক্ষিত (${toBengaliDigits(bookmarkCount)})` : 'সংরক্ষিত',
-      en: bookmarkCount > 0 ? `Bookmarks (${bookmarkCount})` : 'Bookmarks',
+      bn: savedCount > 0 ? `সংরক্ষিত (${toBengaliDigits(savedCount)})` : 'সংরক্ষিত',
+      en: savedCount > 0 ? `Saved (${savedCount})` : 'Saved',
     },
     { id: 'progress', bn: 'অগ্রগতি', en: 'Progress' },
+    { id: 'settings', bn: 'সেটিংস', en: 'Settings' },
   ];
 
   const resumeLabel =
     uiLanguage === 'bn'
-      ? `পড়ুন ${toBengaliDigits(lastRead.surahNumber)}:${toBengaliDigits(lastRead.ayahNumber)}`
-      : `Resume ${lastRead.surahNumber}:${lastRead.ayahNumber}`;
+      ? `পাঠ ${toBengaliDigits(lastRead.surahNumber)}:${toBengaliDigits(lastRead.ayahNumber)}`
+      : `Read ${lastRead.surahNumber}:${lastRead.ayahNumber}`;
 
   return (
-    <header className="w-full md:sticky md:top-0 z-30 bg-[var(--neu-bg)]/95 backdrop-blur-sm border-b border-[var(--neu-divider)]">
-      <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-8">
-        {/* Zone 1: Single-element Brand Wordmark */}
+    <header className="w-full sticky top-0 z-30 bg-[var(--neu-bg)]/95 backdrop-blur-md border-b border-[var(--neu-divider)] shadow-[0_6px_18px_rgba(148,163,184,0.16)] dark:shadow-[0_6px_20px_rgba(0,0,0,0.45)]">
+      <div className="max-w-[1380px] mx-auto px-3.5 sm:px-6 lg:px-8 h-15 sm:h-18 flex items-center justify-between gap-3 sm:gap-8">
+        {/* Zone 1: 3D Tactile Brand Wordmark */}
         <a
-          href="#reader"
+          href={buildAppPath('reader', activeSurahNumber, baseUrl)}
           onClick={(e) => {
             e.preventDefault();
             onSelectView('reader');
           }}
-          className="inline-flex items-center gap-2.5 text-lg font-bold tracking-tight text-[var(--neu-text-primary)] whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--neu-accent)] rounded-lg px-1"
+          className="neu-btn inline-flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 rounded-2xl text-sm sm:text-lg font-bold tracking-tight text-[var(--neu-text-primary)] whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--neu-accent)]"
         >
-          <NoorEmblem size={30} />
+          <NoorEmblem size={26} />
           <span className="font-bengali">
             {uiLanguage === 'bn' ? 'আল-নূর কুরআন' : 'Al-Noor Quran'}
           </span>
         </a>
 
-        {/* Zone 2: 4 concise single-line text navigation links */}
+        {/* Zone 2: 3D Sculpted Neumorphic Menu Dock */}
         <nav
           aria-label={uiLanguage === 'bn' ? 'প্রধান নেভিগেশন' : 'Primary Navigation'}
-          className="hidden md:flex items-center gap-7"
+          className="hidden md:flex items-center gap-1.5 neu-inset p-1.5 rounded-2xl"
         >
           {navItems.map((item) => {
             const isActive = activeView === item.id;
+            const href = buildAppPath(item.id, activeSurahNumber, baseUrl);
             return (
-              <button
+              <a
                 key={item.id}
-                type="button"
-                onClick={() => onSelectView(item.id)}
-                className={`relative py-2 text-sm font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--neu-accent)] rounded-md px-1 tabular-nums ${
+                href={href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSelectView(item.id);
+                }}
+                aria-current={isActive ? 'page' : undefined}
+                className={`relative px-4 py-2 rounded-xl text-sm whitespace-nowrap shrink-0 cursor-pointer tabular-nums transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--neu-accent)] ${
                   isActive
-                    ? 'text-[var(--neu-accent)] font-semibold'
-                    : 'text-[var(--neu-text-secondary)] hover:text-[var(--neu-text-primary)]'
+                    ? 'neu-raised-sm text-[var(--neu-accent)] font-bold -translate-y-[1px]'
+                    : 'text-[var(--neu-text-secondary)] font-medium hover:text-[var(--neu-text-primary)] hover:-translate-y-[0.5px]'
                 }`}
               >
                 {uiLanguage === 'bn' ? item.bn : item.en}
-                <span
-                  aria-hidden="true"
-                  className={`absolute left-1 right-1 -bottom-[1px] h-[2px] rounded-full transition-opacity duration-200 ${
-                    isActive ? 'bg-[var(--neu-accent)] opacity-100' : 'opacity-0'
-                  }`}
-                />
-              </button>
+              </a>
             );
           })}
         </nav>
 
-        {/* Zone 3: Single primary CTA */}
+        {/* Zone 3: 3D Tactile Primary Reading/Path CTA */}
         <div className="flex items-center shrink-0">
           <button
             type="button"
             onClick={onResumeReading}
-            className="neu-accent-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--neu-accent)] focus-visible:ring-offset-2"
+            aria-label={
+              uiLanguage === 'bn'
+                ? `পাঠ অবস্থানে যান (${toBengaliDigits(lastRead.surahNumber)}:${toBengaliDigits(lastRead.ayahNumber)})`
+                : `Jump to current reading Ayah (${lastRead.surahNumber}:${lastRead.ayahNumber})`
+            }
+            className="neu-accent-btn inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--neu-accent)] focus-visible:ring-offset-2"
           >
             <BookOpen className="w-4 h-4 shrink-0" aria-hidden="true" />
             <span className="tabular-nums">{resumeLabel}</span>

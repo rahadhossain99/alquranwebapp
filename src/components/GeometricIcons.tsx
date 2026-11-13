@@ -3,28 +3,52 @@ import React from 'react';
 interface AyahRosetteProps {
   label: string;
   active?: boolean;
+  playing?: boolean;
   size?: number;
 }
 
 export const AyahRosette: React.FC<AyahRosetteProps> = ({
   label,
   active = false,
+  playing = false,
   size = 40,
 }) => {
   return (
     <div
       className={`relative inline-flex items-center justify-center shrink-0 select-none transition-transform duration-200 ${
-        active ? 'scale-105' : ''
+        active || playing ? 'scale-105' : ''
       }`}
       style={{ width: size, height: size }}
     >
+      {playing && (
+        <svg
+          viewBox="0 0 48 48"
+          width={size + 8}
+          height={size + 8}
+          aria-hidden="true"
+          className="absolute -inset-1 pointer-events-none animate-spin"
+          style={{ animationDuration: '4s' }}
+        >
+          <circle
+            cx="24"
+            cy="24"
+            r="21.5"
+            fill="none"
+            stroke="var(--neu-accent)"
+            strokeWidth="2"
+            strokeDasharray="24 14 10 14"
+            strokeLinecap="round"
+            opacity="0.85"
+          />
+        </svg>
+      )}
       <svg
         viewBox="0 0 48 48"
         width={size}
         height={size}
         aria-hidden="true"
         className={`transition-colors duration-200 ${
-          active
+          active || playing
             ? 'text-[var(--neu-accent)]'
             : 'text-[var(--neu-gold)] opacity-85'
         }`}
@@ -55,14 +79,14 @@ export const AyahRosette: React.FC<AyahRosetteProps> = ({
           cx="24"
           cy="24"
           r="10.5"
-          fill={active ? 'var(--neu-accent-soft)' : 'var(--neu-gold-soft)'}
+          fill={active || playing ? 'var(--neu-accent-soft)' : 'var(--neu-gold-soft)'}
           stroke="currentColor"
           strokeWidth="1.1"
         />
       </svg>
       <span
         className={`absolute inset-0 flex items-center justify-center text-[11px] font-semibold tabular-nums ${
-          active
+          active || playing
             ? 'text-[var(--neu-accent)]'
             : 'text-[var(--neu-text-primary)]'
         }`}

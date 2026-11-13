@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Bookmark,
+  BookOpenText,
   Check,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Copy,
   Pause,
   Play,
   RefreshCw,
+  Share2,
+  Star,
 } from 'lucide-react';
 import {
   Ayah,
@@ -17,7 +19,11 @@ import {
   SurahDetail,
   SurahMeta,
 } from '../types/quran';
-import { toArabicIndicDigits, toBengaliDigits } from '../utils/quranLogic';
+import {
+  getAyahHaloPalette,
+  toArabicIndicDigits,
+  toBengaliDigits,
+} from '../utils/quranLogic';
 import { ArabesqueDivider, AyahRosette } from './GeometricIcons';
 
 interface SurahReaderProps {
@@ -28,17 +34,268 @@ interface SurahReaderProps {
   onRetry: () => void;
   settings: ReaderSettings;
   activePlayingAyah: number | null;
+  playingAyahDuration?: number;
   highlightedAyah: number | null;
   isPlaying: boolean;
   bookmarks: BookmarkItem[];
+  favoriteSurahs: number[];
   readAyahKeys: Set<string>;
   onPlayAyah: (ayahNumber: number) => void;
   onPlaySurah: () => void;
   onToggleBookmark: (ayah: Ayah) => void;
-  onToggleReadAyah: (ayahNumber: number) => void;
-  onMarkSurahRead: () => void;
+  onToggleFavoriteSurah: (surahNumber: number) => void;
+  onAutoMarkAyahRead: (ayahNumber: number) => void;
   onNavigateSurah: (surahNumber: number) => void;
+  onOpenSurahList: () => void;
+  onShareAyah: (ayah: Ayah) => void;
 }
+
+interface AyahCardProps {
+  ayah: Ayah;
+  surahNumber: number;
+  isBn: boolean;
+  isBookmarked: boolean;
+  isRead: boolean;
+  isActiveAudio: boolean;
+  isCurrentlyPlaying: boolean;
+  isHighlighted: boolean;
+  isCopied: boolean;
+  arabicFontSize: number;
+  translationFontSize: number;
+  transliterationFontSize: number;
+  showBengali: boolean;
+  showTransliteration: boolean;
+  showEnglish: boolean;
+  playingAyahDuration?: number;
+  onPlayAyah: (ayahNumber: number) => void;
+  onToggleBookmark: (ayah: Ayah) => void;
+  onCopy: (ayah: Ayah) => void;
+  onShareAyah: (ayah: Ayah) => void;
+}
+
+const AyahCard = React.memo<AyahCardProps>(
+  ({
+    ayah,
+    surahNumber,
+    isBn,
+    isBookmarked,
+    isRead,
+    isActiveAudio,
+    isCurrentlyPlaying,
+    isHighlighted,
+    isCopied,
+    arabicFontSize,
+    translationFontSize,
+    transliterationFontSize,
+    showBengali,
+    showTransliteration,
+    showEnglish,
+    playingAyahDuration,
+    onPlayAyah,
+    onToggleBookmark,
+    onCopy,
+    onShareAyah,
+  }) => {
+    const rosetteNum = isBn
+      ? toBengaliDigits(ayah.numberInSurah)
+      : String(ayah.numberInSurah);
+
+    const haloPalette = getAyahHaloPalette(ayah.numberInSurah);
+    const estimatedSec = Math.max(
+      4,
+      Math.min(45, Math.round(ayah.arabic.length / 7.2) + 2)
+    );
+    const loopDurSec =
+      isCurrentlyPlaying && playingAyahDuration && playingAyahDuration > 0
+        ? playingAyahDuration
+        : estimatedSec;
+
+    return (
+      <article
+        id={`ayah-${ayah.numberInSurah}`}
+        data-ayah-num={ayah.numberInSurah}
+        data-testid={`ayah-card-${ayah.numberInSurah}`}
+        data-playing={isCurrentlyPlaying ? 'true' : 'false'}
+        style={
+          isCurrentlyPlaying
+            ? ({
+                '--halo-c1': haloPalette.c1,
+                '--halo-c2': haloPalette.c2,
+                '--halo-duration': `${loopDurSec.toFixed(1)}s`,
+              } as React.CSSProperties)
+            : undefined
+        }
+        className={`rounded-3xl ayah-card-perf ${
+          isCurrentlyPlaying
+            ? 'ayah-playing-halo'
+            : isHighlighted || isActiveAudio
+              ? 'neu-raised ring-2 ring-[var(--neu-accent)]/65'
+              : 'neu-raised'
+        }`}
+      >
+        <div
+          className={
+            isCurrentlyPlaying ? 'ayah-playing-halo-inner p-5 sm:p-7' : 'p-5 sm:p-7'
+          }
+        >
+          {/* Ayah Controls Header */}
+          <div className="flex items-center justify-between gap-4 pb-4 border-b border-[var(--neu-divider)]">
+            <div className="flex items-center gap-3">
+              <div
+                className={`rounded-full transition-transform duration-300 ${
+                  isCurrentlyPlaying ? 'scale-110' : ''
+                }`}
+              >
+                <AyahRosette
+                  label={rosetteNum}
+                  active={isActiveAudio || isRead || isHighlighted}
+                  playing={isCurrentlyPlaying}
+                  size={40}
+                />
+              </div>
+              <span className="text-xs font-medium text-[var(--neu-text-muted)] tabular-nums">
+                {isBn
+                  ? `${toBengaliDigits(surahNumber)}:${toBengaliDigits(ayah.numberInSurah)}`
+                  : `${surahNumber}:${ayah.numberInSurah}`}
+              </span>
+              {isBookmarked && (
+                <span className="text-[11px] font-semibold text-[var(--neu-gold)]">
+                  · {isBn ? 'বুকমার্ক হয়েছে' : 'Bookmarked'}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onPlayAyah(ayah.numberInSurah)}
+                aria-label={
+                  isBn
+                    ? `আয়াত ${ayah.numberInSurah} শুনুন`
+                    : `Play Ayah ${ayah.numberInSurah}`
+                }
+                className={`h-10 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all duration-300 ${
+                  isCurrentlyPlaying
+                    ? 'neu-accent-btn px-3.5 scale-105'
+                    : 'neu-btn w-10 text-[var(--neu-text-secondary)] hover:text-[var(--neu-accent)]'
+                }`}
+              >
+                {isCurrentlyPlaying ? (
+                  <>
+                    <Pause className="w-4 h-4 fill-current shrink-0" />
+                    <span className="text-xs font-semibold hidden sm:inline">
+                      {isBn ? 'চলছে' : 'Playing'}
+                    </span>
+                  </>
+                ) : (
+                  <Play className="w-4 h-4 fill-current translate-x-[0.5px]" />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onToggleBookmark(ayah)}
+                aria-pressed={isBookmarked}
+                aria-label={
+                  isBn
+                    ? `আয়াত ${ayah.numberInSurah} বুকমার্ক করুন`
+                    : `Bookmark Ayah ${ayah.numberInSurah}`
+                }
+                className={`w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer transition-all ${
+                  isBookmarked
+                    ? 'neu-inset text-[var(--neu-gold)]'
+                    : 'neu-btn text-[var(--neu-text-secondary)] hover:text-[var(--neu-gold)]'
+                }`}
+              >
+                <Bookmark
+                  className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`}
+                />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onCopy(ayah)}
+                aria-label={
+                  isBn
+                    ? `আয়াত ${ayah.numberInSurah} কপি করুন`
+                    : `Copy Ayah ${ayah.numberInSurah}`
+                }
+                className="neu-btn w-10 h-10 rounded-xl flex items-center justify-center text-[var(--neu-text-secondary)] hover:text-[var(--neu-text-primary)] cursor-pointer"
+              >
+                {isCopied ? (
+                  <Check className="w-4 h-4 text-[var(--neu-accent)]" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onShareAyah(ayah)}
+                aria-label={
+                  isBn
+                    ? `আয়াত ${ayah.numberInSurah} শেয়ার করুন`
+                    : `Share Ayah ${ayah.numberInSurah}`
+                }
+                className="neu-btn w-10 h-10 rounded-xl flex items-center justify-center text-[var(--neu-text-secondary)] hover:text-[var(--neu-accent)] cursor-pointer"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* 1. Arabic Script */}
+          <div className="pt-6 pb-4" dir="rtl">
+            <p
+              className="font-quran text-[var(--neu-text-primary)] leading-[2.2] text-right"
+              style={{ fontSize: `var(--live-ar-size, ${arabicFontSize}px)` }}
+            >
+              {ayah.arabic}{' '}
+              <span className="text-[var(--neu-gold)] text-[0.72em] select-none px-1">
+                ﴿{toArabicIndicDigits(ayah.numberInSurah)}﴾
+              </span>
+            </p>
+          </div>
+
+          {/* 2. Bengali Meaning & 3. English Pronunciation (Transliteration) */}
+          <div className="space-y-3 max-w-3xl">
+            {showBengali && ayah.bengali && (
+              <p
+                className="font-bengali text-[var(--neu-text-primary)] leading-[1.75]"
+                style={{ fontSize: `var(--live-bn-size, ${translationFontSize}px)` }}
+              >
+                {ayah.bengali}
+              </p>
+            )}
+
+            {showTransliteration && ayah.transliteration && (
+              <p
+                className="font-latin text-[var(--neu-text-secondary)] leading-[1.7]"
+                style={{ fontSize: `var(--live-tr-size, ${transliterationFontSize}px)` }}
+              >
+                <span className="font-semibold text-[var(--neu-accent)] not-italic mr-1.5 font-bengali">
+                  {isBn ? 'উচ্চারণ:' : 'Pronunciation:'}
+                </span>
+                <span className="italic">{ayah.transliteration}</span>
+              </p>
+            )}
+
+            {showEnglish && ayah.english && (
+              <p
+                className="font-latin text-[var(--neu-text-muted)] leading-[1.65]"
+                style={{
+                  fontSize: `var(--live-en-size, ${Math.max(12, translationFontSize - 2)}px)`,
+                }}
+              >
+                {ayah.english}
+              </p>
+            )}
+          </div>
+        </div>
+      </article>
+    );
+  }
+);
 
 export const SurahReader: React.FC<SurahReaderProps> = ({
   surahMeta,
@@ -48,30 +305,81 @@ export const SurahReader: React.FC<SurahReaderProps> = ({
   onRetry,
   settings,
   activePlayingAyah,
+  playingAyahDuration,
   highlightedAyah,
   isPlaying,
   bookmarks,
+  favoriteSurahs,
   readAyahKeys,
   onPlayAyah,
   onPlaySurah,
   onToggleBookmark,
-  onToggleReadAyah,
-  onMarkSurahRead,
+  onToggleFavoriteSurah,
+  onAutoMarkAyahRead,
   onNavigateSurah,
+  onOpenSurahList,
+  onShareAyah,
 }) => {
   const [copiedAyah, setCopiedAyah] = useState<number | null>(null);
   const isBn = settings.uiLanguage === 'bn';
+  const isSurahFavorite = favoriteSurahs.includes(surahMeta.number);
 
-  const handleCopy = async (ayah: Ayah) => {
-    const text = `${ayah.arabic}\n\n${ayah.bengali}\n${ayah.english}\n— ${surahMeta.englishName} (${surahMeta.number}:${ayah.numberInSurah})`;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedAyah(ayah.numberInSurah);
-      setTimeout(() => setCopiedAyah(null), 1800);
-    } catch {
-      // Clipboard blocked in non-HTTPS contexts
-    }
-  };
+  // Automatically record Ayahs viewed steadily in viewport as read
+  useEffect(() => {
+    if (!surahDetail || loading) return;
+    if (typeof IntersectionObserver === 'undefined') return;
+
+    const pendingTimers = new Map<number, number>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const raw = entry.target.getAttribute('data-ayah-num');
+          const ayahNum = raw ? Number(raw) : 0;
+          if (!ayahNum) continue;
+
+          if (entry.isIntersecting) {
+            if (!pendingTimers.has(ayahNum)) {
+              const t = window.setTimeout(() => {
+                onAutoMarkAyahRead(ayahNum);
+                pendingTimers.delete(ayahNum);
+              }, 1100);
+              pendingTimers.set(ayahNum, t);
+            }
+          } else {
+            const existing = pendingTimers.get(ayahNum);
+            if (existing !== undefined) {
+              window.clearTimeout(existing);
+              pendingTimers.delete(ayahNum);
+            }
+          }
+        }
+      },
+      { threshold: 0.45 }
+    );
+
+    const nodes = document.querySelectorAll('[data-ayah-num]');
+    nodes.forEach((node) => observer.observe(node));
+
+    return () => {
+      observer.disconnect();
+      pendingTimers.forEach((t) => window.clearTimeout(t));
+      pendingTimers.clear();
+    };
+  }, [loading, onAutoMarkAyahRead, surahDetail]);
+
+  const handleCopy = React.useCallback(
+    async (ayah: Ayah) => {
+      const text = `${ayah.arabic}\n\n${ayah.bengali}\n${ayah.english}\n— ${surahMeta.englishName} (${surahMeta.number}:${ayah.numberInSurah})`;
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopiedAyah(ayah.numberInSurah);
+        setTimeout(() => setCopiedAyah(null), 1800);
+      } catch {
+        // Clipboard blocked in non-HTTPS contexts
+      }
+    },
+    [surahMeta.englishName, surahMeta.number]
+  );
 
   const revelationLabel = isBn
     ? surahMeta.revelationType === 'Meccan'
@@ -90,12 +398,12 @@ export const SurahReader: React.FC<SurahReaderProps> = ({
   const showBismillahBanner = surahMeta.number !== 1 && surahMeta.number !== 9;
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Surah Masthead Card */}
       <section
         key={surahMeta.number}
         aria-label={surahMeta.englishName}
-        className="neu-raised rounded-3xl p-6 sm:p-8 text-center animate-neu-enter"
+        className="neu-raised rounded-3xl p-6 sm:p-8 text-center animate-drop-from-top"
       >
         <div className="flex flex-col items-center">
           <p className="text-xs font-medium tracking-wide text-[var(--neu-text-muted)] tabular-nums">
@@ -144,11 +452,38 @@ export const SurahReader: React.FC<SurahReaderProps> = ({
 
             <button
               type="button"
-              onClick={onMarkSurahRead}
-              className="neu-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-medium text-[var(--neu-text-secondary)] hover:text-[var(--neu-accent)] cursor-pointer whitespace-nowrap"
+              onClick={onOpenSurahList}
+              className="neu-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-medium text-[var(--neu-text-primary)] hover:text-[var(--neu-accent)] cursor-pointer whitespace-nowrap"
             >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>{isBn ? 'সম্পূর্ণ সূরা পড়া হয়েছে' : 'Mark Surah Read'}</span>
+              <BookOpenText className="w-4 h-4 text-[var(--neu-accent)]" />
+              <span>{isBn ? 'সকল সূরা (১১৪)' : 'All Surahs (114)'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onToggleFavoriteSurah(surahMeta.number)}
+              aria-pressed={isSurahFavorite}
+              aria-label={
+                isBn
+                  ? `${surahMeta.bengaliName} ফেভারিট করুন`
+                  : `Favorite ${surahMeta.englishName}`
+              }
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl text-sm font-medium cursor-pointer whitespace-nowrap transition-all ${
+                isSurahFavorite
+                  ? 'neu-inset text-[var(--neu-gold)] font-semibold'
+                  : 'neu-btn text-[var(--neu-text-secondary)] hover:text-[var(--neu-gold)]'
+              }`}
+            >
+              <Star className={`w-4 h-4 ${isSurahFavorite ? 'fill-current' : ''}`} />
+              <span>
+                {isSurahFavorite
+                  ? isBn
+                    ? 'পছন্দের'
+                    : 'Starred'
+                  : isBn
+                    ? 'ফেভারিট'
+                    : 'Favorite'}
+              </span>
             </button>
           </div>
         </div>
@@ -210,169 +545,33 @@ export const SurahReader: React.FC<SurahReaderProps> = ({
             const isBookmarked = bookmarks.some((b) => b.id === key);
             const isRead = readAyahKeys.has(key);
             const isActiveAudio = activePlayingAyah === ayah.numberInSurah;
+            const isCurrentlyPlaying = isActiveAudio && isPlaying;
             const isHighlighted = highlightedAyah === ayah.numberInSurah;
-            const rosetteNum = isBn
-              ? toBengaliDigits(ayah.numberInSurah)
-              : String(ayah.numberInSurah);
 
             return (
-              <article
+              <AyahCard
                 key={ayah.numberInSurah}
-                id={`ayah-${ayah.numberInSurah}`}
-                data-testid={`ayah-card-${ayah.numberInSurah}`}
-                className={`rounded-3xl p-5 sm:p-7 transition-all duration-300 ${
-                  isActiveAudio || isHighlighted
-                    ? 'neu-raised ring-2 ring-[var(--neu-accent)]/55'
-                    : 'neu-raised'
-                }`}
-              >
-                {/* Ayah Controls Header */}
-                <div className="flex items-center justify-between gap-4 pb-4 border-b border-[var(--neu-divider)]">
-                  <div className="flex items-center gap-3">
-                    <AyahRosette
-                      label={rosetteNum}
-                      active={isActiveAudio || isRead || isHighlighted}
-                      size={40}
-                    />
-                    <span className="text-xs font-medium text-[var(--neu-text-muted)] tabular-nums">
-                      {isBn
-                        ? `${toBengaliDigits(surahMeta.number)}:${toBengaliDigits(ayah.numberInSurah)}`
-                        : `${surahMeta.number}:${ayah.numberInSurah}`}
-                    </span>
-                    {isBookmarked && (
-                      <span className="text-[11px] font-semibold text-[var(--neu-gold)]">
-                        · {isBn ? 'বুকমার্ক হয়েছে' : 'Bookmarked'}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onPlayAyah(ayah.numberInSurah)}
-                      aria-label={
-                        isBn
-                          ? `আয়াত ${ayah.numberInSurah} শুনুন`
-                          : `Play Ayah ${ayah.numberInSurah}`
-                      }
-                      className={`h-10 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all duration-300 ${
-                        isActiveAudio && isPlaying
-                          ? 'neu-accent-btn px-3.5 scale-105'
-                          : 'neu-btn w-10 text-[var(--neu-text-secondary)] hover:text-[var(--neu-accent)]'
-                      }`}
-                    >
-                      {isActiveAudio && isPlaying ? (
-                        <>
-                          <Pause className="w-4 h-4 fill-current shrink-0" />
-                          <span className="text-xs font-semibold hidden sm:inline">
-                            {isBn ? 'চলছে' : 'Playing'}
-                          </span>
-                        </>
-                      ) : (
-                        <Play className="w-4 h-4 fill-current translate-x-[0.5px]" />
-                      )}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => onToggleBookmark(ayah)}
-                      aria-pressed={isBookmarked}
-                      aria-label={
-                        isBn
-                          ? `আয়াত ${ayah.numberInSurah} বুকমার্ক করুন`
-                          : `Bookmark Ayah ${ayah.numberInSurah}`
-                      }
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer transition-all ${
-                        isBookmarked
-                          ? 'neu-inset text-[var(--neu-gold)]'
-                          : 'neu-btn text-[var(--neu-text-secondary)] hover:text-[var(--neu-gold)]'
-                      }`}
-                    >
-                      <Bookmark
-                        className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`}
-                      />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => onToggleReadAyah(ayah.numberInSurah)}
-                      aria-pressed={isRead}
-                      aria-label={
-                        isBn
-                          ? `আয়াত ${ayah.numberInSurah} পঠিত হিসেবে চিহ্নিত করুন`
-                          : `Mark Ayah ${ayah.numberInSurah} as read`
-                      }
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer transition-all ${
-                        isRead
-                          ? 'neu-inset text-[var(--neu-accent)]'
-                          : 'neu-btn text-[var(--neu-text-secondary)] hover:text-[var(--neu-accent)]'
-                      }`}
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(ayah)}
-                      aria-label={
-                        isBn
-                          ? `আয়াত ${ayah.numberInSurah} কপি করুন`
-                          : `Copy Ayah ${ayah.numberInSurah}`
-                      }
-                      className="neu-btn w-10 h-10 rounded-xl flex items-center justify-center text-[var(--neu-text-secondary)] hover:text-[var(--neu-text-primary)] cursor-pointer"
-                    >
-                      {copiedAyah === ayah.numberInSurah ? (
-                        <Check className="w-4 h-4 text-[var(--neu-accent)]" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Arabic Script */}
-                <div className="pt-6 pb-4" dir="rtl">
-                  <p
-                    className="font-quran text-[var(--neu-text-primary)] leading-[2.2] text-right"
-                    style={{ fontSize: `${settings.arabicFontSize}px` }}
-                  >
-                    {ayah.arabic}{' '}
-                    <span className="text-[var(--neu-gold)] text-[0.72em] select-none px-1">
-                      ﴿{toArabicIndicDigits(ayah.numberInSurah)}﴾
-                    </span>
-                  </p>
-                </div>
-
-                {/* Transliteration */}
-                {settings.showTransliteration && ayah.transliteration && (
-                  <p className="text-sm italic text-[var(--neu-text-muted)] mb-3 leading-relaxed">
-                    {ayah.transliteration}
-                  </p>
-                )}
-
-                {/* Translations */}
-                <div className="space-y-2.5 max-w-3xl">
-                  {settings.showBengali && ayah.bengali && (
-                    <p
-                      className="font-bengali text-[var(--neu-text-primary)] leading-[1.75]"
-                      style={{ fontSize: `${settings.translationFontSize}px` }}
-                    >
-                      {ayah.bengali}
-                    </p>
-                  )}
-
-                  {settings.showEnglish && ayah.english && (
-                    <p
-                      className="font-latin text-[var(--neu-text-secondary)] leading-[1.7]"
-                      style={{
-                        fontSize: `${Math.max(13, settings.translationFontSize - 1)}px`,
-                      }}
-                    >
-                      {ayah.english}
-                    </p>
-                  )}
-                </div>
-              </article>
+                ayah={ayah}
+                surahNumber={surahMeta.number}
+                isBn={isBn}
+                isBookmarked={isBookmarked}
+                isRead={isRead}
+                isActiveAudio={isActiveAudio}
+                isCurrentlyPlaying={isCurrentlyPlaying}
+                isHighlighted={isHighlighted}
+                isCopied={copiedAyah === ayah.numberInSurah}
+                arabicFontSize={settings.arabicFontSize}
+                translationFontSize={settings.translationFontSize}
+                transliterationFontSize={settings.transliterationFontSize}
+                showBengali={settings.showBengali}
+                showTransliteration={settings.showTransliteration}
+                showEnglish={settings.showEnglish}
+                playingAyahDuration={playingAyahDuration}
+                onPlayAyah={onPlayAyah}
+                onToggleBookmark={onToggleBookmark}
+                onCopy={handleCopy}
+                onShareAyah={onShareAyah}
+              />
             );
           })}
 
