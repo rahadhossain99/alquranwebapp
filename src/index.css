@@ -1,0 +1,241 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --neu-bg: #e6eaef;
+  --neu-surface: #e6eaef;
+  --neu-surface-alt: #edf1f5;
+  --neu-shadow-dark: rgba(163, 177, 198, 0.65);
+  --neu-shadow-light: rgba(255, 255, 255, 0.88);
+  --neu-border: rgba(255, 255, 255, 0.45);
+  --neu-divider: rgba(148, 163, 184, 0.24);
+  --neu-text-primary: #1a2421;
+  --neu-text-secondary: #4a5954;
+  --neu-text-muted: #697872;
+  --neu-accent: #0f766e;
+  --neu-accent-soft: rgba(15, 118, 110, 0.12);
+  --neu-gold: #9a6e22;
+  --neu-gold-soft: rgba(154, 110, 34, 0.14);
+}
+
+.dark {
+  --neu-bg: #1b2028;
+  --neu-surface: #1b2028;
+  --neu-surface-alt: #212731;
+  --neu-shadow-dark: rgba(8, 10, 14, 0.78);
+  --neu-shadow-light: rgba(255, 255, 255, 0.055);
+  --neu-border: rgba(255, 255, 255, 0.05);
+  --neu-divider: rgba(255, 255, 255, 0.07);
+  --neu-text-primary: #edf2f0;
+  --neu-text-secondary: #b1beb9;
+  --neu-text-muted: #84938e;
+  --neu-accent: #2dd4bf;
+  --neu-accent-soft: rgba(45, 212, 191, 0.14);
+  --neu-gold: #e0b254;
+  --neu-gold-soft: rgba(224, 178, 84, 0.14);
+}
+
+@layer base {
+  html {
+    background-color: var(--neu-bg);
+    color: var(--neu-text-primary);
+    font-family: 'Noto Serif Bengali', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--neu-bg);
+    color: var(--neu-text-primary);
+    min-height: 100vh;
+    transition: background-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+      color 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+.font-quran {
+  font-family: 'Amiri Quran', 'Amiri', 'Scheherazade New', serif;
+  font-feature-settings: 'liga' 1, 'calt' 1, 'kern' 1;
+}
+
+.font-bengali {
+  font-family: 'Noto Serif Bengali', 'Plus Jakarta Sans', serif;
+}
+
+.font-latin {
+  font-family: 'Plus Jakarta Sans', 'Noto Serif Bengali', sans-serif;
+}
+
+/* Tactile Neumorphic Surfaces */
+.neu-raised {
+  background-color: var(--neu-surface);
+  box-shadow:
+    8px 8px 18px var(--neu-shadow-dark),
+    -8px -8px 18px var(--neu-shadow-light);
+  border: 1px solid var(--neu-border);
+}
+
+.neu-raised-sm {
+  background-color: var(--neu-surface);
+  box-shadow:
+    5px 5px 11px var(--neu-shadow-dark),
+    -5px -5px 11px var(--neu-shadow-light);
+  border: 1px solid var(--neu-border);
+}
+
+.neu-inset {
+  background-color: var(--neu-surface);
+  box-shadow:
+    inset 4px 4px 9px var(--neu-shadow-dark),
+    inset -4px -4px 9px var(--neu-shadow-light);
+  border: 1px solid transparent;
+}
+
+.neu-inset-sm {
+  background-color: var(--neu-surface);
+  box-shadow:
+    inset 2.5px 2.5px 6px var(--neu-shadow-dark),
+    inset -2.5px -2.5px 6px var(--neu-shadow-light);
+  border: 1px solid transparent;
+}
+
+.neu-btn {
+  background-color: var(--neu-surface);
+  box-shadow:
+    5px 5px 11px var(--neu-shadow-dark),
+    -5px -5px 11px var(--neu-shadow-light);
+  border: 1px solid var(--neu-border);
+  transition:
+    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.neu-btn:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    7px 7px 14px var(--neu-shadow-dark),
+    -7px -7px 14px var(--neu-shadow-light);
+}
+
+.neu-btn:active,
+.neu-btn-active {
+  transform: translateY(0);
+  box-shadow:
+    inset 3.5px 3.5px 8px var(--neu-shadow-dark),
+    inset -3.5px -3.5px 8px var(--neu-shadow-light);
+}
+
+.neu-accent-btn {
+  background: linear-gradient(145deg, #11857c, #0c635c);
+  color: #ffffff;
+  box-shadow:
+    5px 5px 12px var(--neu-shadow-dark),
+    -4px -4px 10px var(--neu-shadow-light),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.25);
+  transition:
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark .neu-accent-btn {
+  background: linear-gradient(145deg, #14b8a6, #0d9488);
+  color: #091513;
+  box-shadow:
+    6px 6px 14px var(--neu-shadow-dark),
+    -4px -4px 10px var(--neu-shadow-light),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.35);
+}
+
+.neu-accent-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.neu-accent-btn:active {
+  transform: scale(0.97);
+}
+
+/* Custom subtle range slider inside neumorphic track */
+input[type='range'].neu-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='range'].neu-range::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--neu-surface);
+  box-shadow:
+    inset 2px 2px 5px var(--neu-shadow-dark),
+    inset -2px -2px 5px var(--neu-shadow-light);
+}
+
+input[type='range'].neu-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -5px;
+  border-radius: 9999px;
+  background: var(--neu-accent);
+  box-shadow:
+    2px 2px 6px var(--neu-shadow-dark),
+    -2px -2px 5px var(--neu-shadow-light);
+  border: 2px solid var(--neu-surface-alt);
+  transition: transform 150ms ease;
+}
+
+input[type='range'].neu-range::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(132, 147, 142, 0.35);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(132, 147, 142, 0.55);
+}
+
+@keyframes neu-fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-neu-enter {
+  animation: neu-fade-rise 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
